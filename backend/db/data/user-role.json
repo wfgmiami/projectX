@@ -1,0 +1,11 @@
+[
+  {
+    "roletype": "Administrator"
+  },
+  {
+    "roletype": "Regular"
+  },
+  {
+    "roletype": "Premium"
+  }
+]

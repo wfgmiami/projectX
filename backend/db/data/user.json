@@ -1,0 +1,29 @@
+[
+  {
+    "firstname": "William",
+    "lastname": "Hees",
+    "username": "Bill",
+    "email":"bill@gmail.com",
+    "password": "123",
+    "role_id": 1,
+    "address_id": 2
+  },
+  {
+    "firstname": "Aleksandar",
+    "lastname": "Penchev",
+    "username": "Aleks",
+    "email": "alpenchev@yahoo.com",
+    "password": "123",
+    "role_id": 2,
+    "address_id": 1
+  },
+  {
+    "firstname": "John",
+    "lastname": "Doe",
+    "username": "John",
+    "email": "jdoe@yahoo.com",
+    "password": "123",
+    "role_id": 3,
+    "address_id": 3
+  }
+]

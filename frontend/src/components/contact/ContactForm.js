@@ -1,42 +1,41 @@
 import React, { Component } from "react";
-
 import TextField from "@material-ui/core/TextField";
 import { withStyles } from "@material-ui/core/styles";
 import Button from "@material-ui/core/Button";
-
+import PropTypes from "prop-types";
 
 import classNames from "classnames";
 import { validateContactForm } from "./validate";
 import InputMask from "react-input-mask";
 
-const styles = theme => ({
+const styles = (theme) => ({
   root: {
     [theme.breakpoints.up("md")]: {
       display: "flex",
-      justifyContent: "space-between"
-    }
+      justifyContent: "space-between",
+    },
   },
   flexContainer: {
-    margin: "20px auto 0 auto"
+    margin: "20px auto 0 auto",
   },
   flexSection: {
     padding: "20px",
     boxSizing: "border-box",
     flexBasis: "1000%",
-    marginBottom: "20px"
+    marginBottom: "20px",
   },
   container: {
     display: "flex",
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   textField: {
     marginLeft: theme.spacing.unit,
     marginRight: theme.spacing.unit,
-    width: "45%"
+    width: "45%",
   },
   selectEmpty: {
-    marginTop: theme.spacing.unit * 2
-  }
+    marginTop: theme.spacing.unit * 2,
+  },
 });
 
 class ContactUsForm extends Component {
@@ -46,8 +45,8 @@ class ContactUsForm extends Component {
       lastName: "",
       email: "",
       phone: "",
-      comment: ""
-    }
+      comment: "",
+    },
   };
 
   handleSendMessage = () => {
@@ -57,7 +56,7 @@ class ContactUsForm extends Component {
     const validationObj = validateContactForm(this.state.contact);
     const validationArray = Object.keys(validationObj);
     const requiredViolation = validationArray.findIndex(
-      field => validationObj[field] === "Required"
+      (field) => validationObj[field] === "Required"
     );
 
     errorMsg =
@@ -76,12 +75,12 @@ class ContactUsForm extends Component {
     else alert(errorMsg);
   };
 
-  handleChange = key => ({ target: { value } }) => {
+  handleChange = (key) => ({ target: { value } }) => {
     this.setState({
       contact: {
         ...this.state.contact,
-        [key]: value
-      }
+        [key]: value,
+      },
     });
   };
 
@@ -161,5 +160,10 @@ class ContactUsForm extends Component {
     );
   }
 }
+
+ContactUsForm.propTypes = {
+  onFormSend: PropTypes.func.isRequired,
+  classes: PropTypes.object.isRequired,
+};
 
 export default withStyles(styles)(ContactUsForm);

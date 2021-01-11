@@ -10,18 +10,18 @@ import InputMask from "react-input-mask";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
 import { withRouter } from "react-router-dom";
-
-import { validateRegister } from "../../common/validate";
+import PropTypes from "prop-types";
+import { validateRegister } from "../common/validate";
 import { usStates } from "../../assets/static/us-states";
 
 import * as registrationActions from "../../redux/actions/registrationActions";
 
-const styles = theme => ({
+const styles = (theme) => ({
   root: {},
   textField: {
     marginLeft: theme.spacing.unit,
     marginRight: theme.spacing.unit,
-    width: "45%"
+    width: "45%",
   },
   textFieldBox: {
     width: "5%",
@@ -31,27 +31,22 @@ const styles = theme => ({
     paddingTop: "3em",
     float: "right",
     width: "50%",
-    background: 'green'
+    background: "green",
   },
   boxName: {
-    background: 'yellow'
+    background: "yellow",
   },
-  numField: {
-
-  },
+  numField: {},
   formControl: {
     margin: theme.spacing.unit,
-    width: "45%"
+    width: "45%",
   },
   selectEmpty: {
-    marginTop: theme.spacing.unit * 2
-  }
+    marginTop: theme.spacing.unit * 2,
+  },
 });
 
-
-
 class RegisterPage extends Component {
-
   handleSubmit = () => {
     let errorMsg = null;
     const registerUser = this.props.registerUser;
@@ -59,7 +54,7 @@ class RegisterPage extends Component {
     const validationObj = validateRegister(registerUser);
     const validationArray = Object.keys(validationObj);
     const requiredViolation = validationArray.findIndex(
-      field => validationObj[field] === "Required"
+      (field) => validationObj[field] === "Required"
     );
 
     errorMsg =
@@ -113,13 +108,13 @@ class RegisterPage extends Component {
     }
   };
 
-  handleChange = key => ({ target: { value } }) => {
+  handleChange = (key) => ({ target: { value } }) => {
     this.props.setRegisterUserAttributes({ [key]: value });
   };
 
   render() {
     const { classes, registerUser } = this.props;
-    console.log('RegisterPage: this.props:',this.props)
+    console.log("RegisterPage: this.props:", this.props);
     return (
       <React.Fragment>
         <form>
@@ -206,7 +201,7 @@ class RegisterPage extends Component {
               onChange={this.handleChange("state")}
               inputProps={{
                 name: "state",
-                id: "state-simple"
+                id: "state-simple",
               }}
             >
               {Object.keys(usStates).map((stateAbbr, id) => (
@@ -242,9 +237,16 @@ class RegisterPage extends Component {
   }
 }
 
+RegisterPage.propTypes = {
+  classes: PropTypes.object.isRequired,
+  registerUser: PropTypes.object.isRequired,
+  setRegisterUser: PropTypes.func.isRequired,
+  setRegisterUserAttributes: PropTypes.func.isRequired,
+};
+
 function mapStateToProps({ registerUser }) {
   return {
-    registerUser
+    registerUser,
   };
 }
 
@@ -252,17 +254,12 @@ function mapDispatchToProps(dispatch) {
   return bindActionCreators(
     {
       setRegisterUserAttributes: registrationActions.setRegisterUserAttributes,
-      setRegisterUser: registrationActions.setRegisterUser
+      setRegisterUser: registrationActions.setRegisterUser,
     },
     dispatch
   );
 }
 
 export default withStyles(styles, { withTheme: true })(
-  withRouter(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps
-    )(RegisterPage)
-  )
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(RegisterPage))
 );

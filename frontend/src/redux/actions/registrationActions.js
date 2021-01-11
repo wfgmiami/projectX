@@ -1,6 +1,5 @@
-import axios from 'axios';
-import * as types from './actionTypes';
-import * as registerApi from '../../api/registerApi';
+import * as types from "./actionTypes";
+import * as registerApi from "../../api/registerApi";
 
 // export function setRegisterUser(registerUser){
 
@@ -19,33 +18,31 @@ import * as registerApi from '../../api/registerApi';
 // }
 
 export function registerUserSuccess(user) {
-    return { type: types.REGISTER_USER_SUCCESS, user }
-  }
+  return { type: types.REGISTER_USER_SUCCESS, user };
+}
 
-  export function registerUserFailure(error) {
-    return { type: types.REGISTER_USER_FAILURE, error }
-  }
+export function registerUserFailure(error) {
+  return { type: types.REGISTER_USER_FAILURE, error };
+}
 
 export function setRegisterUser(registerUser) {
-    return function (dispatch) {
-      return registerApi
+  return function (dispatch) {
+    return registerApi
       .registerUser(registerUser)
-      .then(user => {
+      .then((user) => {
         // user = {access_token:""}
-        dispatch(registerUserSuccess(user))
+        dispatch(registerUserSuccess(user));
       })
-      .catch(error => {
-        dispatch(registerUserFailure(error))
-      })
-    }
-  }
+      .catch((error) => {
+        dispatch(registerUserFailure(error));
+      });
+  };
+}
 
-
-
-export function setRegisterUserAttributes(attribute){
-    console.log('registrationActions: attribute:', attribute)
-    return {
-        type: types.SET_CANDIDATE_ATTRIBUTES,
-        attribute
-    }
+export function setRegisterUserAttributes(attribute) {
+  console.log("registrationActions: attribute:", attribute);
+  return {
+    type: types.SET_CANDIDATE_ATTRIBUTES,
+    attribute,
+  };
 }

@@ -1,7 +1,7 @@
 {
-  "name": "Data-BETA",
+  "name": "Portfolio-Tool",
   "version": "1.0.0",
-  "description": "Anti-aging Data-BETA project",
+  "description": "Investment Portfolio Tool",
   "main": "index.js",
   "dependencies": {
     "aws-sdk": "^2.702.0",

@@ -1,5 +1,10 @@
 export async function handleResponse(response) {
-  if (response.ok) { console.log('response'); return response.json(); }
+  if (response.ok) {
+    // console.log("frontend/src/api/apiUtils: response: ", response);
+    // 204 - No Content success status response code
+    if (response.status === 204) return response;
+    return response.json();
+  }
   if (response.status === 400) {
     // So, a server-side validation error occurred.
     // Server side validation returns a string error message, so parse as text instead of json.

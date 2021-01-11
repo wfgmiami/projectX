@@ -1,16 +1,17 @@
-const router = require( 'express' ).Router();
+const router = require("express").Router();
 
-router.use('/articles', require('./articles'));
+router.use("/portfolios", require("./portfolios"));
 
-router.use('/authors', require('./authors'));
+router.use("/transactions", require("./transactions"));
 
-router.use('/signin', require('./session'));
+router.use("/marketdata", require("./marketData"));
 
-router.use('/signup', require('./user'));
+// router.use("/signin", require("./session"));
 
-router.use(function(req, res) {
+// router.use("/signup", require("./user"));
+
+router.use(function (req, res) {
   res.status(404).end();
-})
-
+});
 
 module.exports = router;

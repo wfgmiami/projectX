@@ -9,6 +9,7 @@ export default function apiCallStatusReducer(
   state = initialState.apiCallsInProgress,
   action
 ) {
+  // console.log("apiCallStatusReducer: state: ", state, "action", action);
   if (action.type == types.BEGIN_API_CALL) {
     return state + 1;
   } else if (

@@ -1,148 +1,138 @@
-/* react-redux-css */
 #app {
   /* max-width: 850px; */
-  margin: 0 10px;
+  margin: 0 auto;
 }
 
-nav {
-  padding: 30px 0 30px 0;
+#nav {
+  padding: 20px 0 20px 0;
 }
 
-.centerPositionButton {
-  text-align: center;
-  padding: 30px 0 0 0
+/* Modal component */
+.modal {
+  background: rgba(0, 0, 0, 0.6);
 }
 
-.centerPositionLink {
-  text-align: center;
-  padding: 30px 0 30px 0
+.modal-container {
+  position: absolute;
+  width: 60%;
+  background: #ffffff;
+  left: 25%;
+  top: 30%;
+  padding: 20px;
 }
 
-
-.imgClock {
-  width: 100%;
-}
-/* ecomm css */
-
-.form {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-}
-.form-container {
-  display: flex;
-  flex-direction: column;
-  width: 32rem;
-  padding: 2rem;
-  border: 0.1rem #c0c0c0 solid;
-  border-radius: 0.5rem;
-  list-style-type: none;
-}
-.form-container li {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1rem;
-  margin-top: 1rem;
-}
-input {
-  padding: 1rem;
-  border: 0.1rem #c0c0c0 solid;
-  border-radius: 0.5rem;
-}
-button {
-  font-size: 1.6rem;
-}
-.button {
-  padding: 1rem;
-  border: 0.1rem #808080 solid;
-  border-radius: 0.5rem;
-  cursor: pointer;
-}
-.button:hover {
-  border: 0.1rem #404040 solid;
-}
-.button.primary {
-  background-color: #f0c040;
-}
-.button.secondary {
-  background-color: #f0f0f0;
-}
-.text-center {
-  text-align: center;
+/* EditPortfolio is the dropdown menu */
+.dropdownMenu {
+  background: #ffffff;
+  border-radius: 8px;
+  position: absolute;
+  top: 45px;
+  left: 50px;
+  width: 200px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-20px);
+  transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s;
 }
 
-/* Transmax */
-* {
-  box-sizing: border-box;
+.dropdownMenu.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdownMenu ul {
+  list-style: none;
   padding: 0;
   margin: 0;
 }
 
-html, body {
+.dropdownMenu li {
+  border-bottom: 1px solid #dddddd;
+}
+
+.dropdownMenu li a {
+  text-decoration: none;
+  color: #333333;
+  padding: 15px 20px;
+  display: block;
+}
+
+/* holding table css */
+table {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
   width: 100%;
-  /* height: 100%; */
-  background: #eff0f2;
-  margin: 0px;
-  padding: 0px;
-  /* overflow-x: hidden; */
 }
 
-body {
-  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
-  font-weight: 300;
-  font-size: 14px;
+table td,
+table th {
+  border: 1px solid #ddd;
+  /* padding: 8px; */
 }
 
-.Navbar {
-  background-color: #2D2F30;
-  display: flex;
-  /* padding: 5px; */
-  font-family: sans-serif;
+table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+table tr:hover {
+  background-color: #ddd;
+}
+
+table th {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  text-align: center;
+  background-color: rgb(0, 200, 5);
   color: white;
 }
-.Navbar__Link {
-  padding-right: 8px;
+
+/* transactions table css */
+/* table.transactions {
+  display: inline-block;
+  border-spacing: 0;
+  padding: 1.5rem;
+} */
+
+/* .tb {
+  padding: 1.5rem;
+} */
+
+/* .th,
+.td {
+  margin: 0;
+  padding: 0.5rem;
+  border-bottom: 1px solid black;
+  border-right: 1px solid solid black;
+  position: relative;
+} */
+
+/* .resizer {
+  display: inline-block;
+  background: blue;
+  width: 10px;
+  height: 100%;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: translateX(50%);
+  z-index: 1;
+  touch-action: none;
 }
-.Navbar__Items {
-  display: flex;
-}
-.Navbar__Items--right {
-  margin-left:auto;
-}
-.Navbar__Link-toggle {
-  display: none;
-}
-.phone {
-  margin-top: 25px;
-  margin-left: 50px;
-  font-size: 24px;
+.resizer.isResizing {
+  background: red;
+} */
+
+/* from react-table 7 example */
+td input {
+  padding: 0;
+  margin: 0;
+  border: 0;
 }
 
-@media only screen and (max-width: 768px) {
-  .Navbar__Items,
-  .Navbar {
-    flex-direction: column;
-  }
-.Navbar__Items {
-    display:none;
-  }
-.Navbar__Items--right {
-    margin-left:0;
-  }
-.Navbar__ToggleShow {
-    display: flex;
-  }
-.phone {
-  margin-top: 10px;
-  margin-left: 30px;
-  font-size: 20px;
-}
-.Navbar__Link-toggle {
-    margin-top: 10px;
-    align-self: flex-end;
-    display: initial;
-    position: absolute;
-    cursor: pointer;
-   }
+/* common */
+span.dropdown {
+  cursor: pointer;
+  padding: 0.2rem;
 }

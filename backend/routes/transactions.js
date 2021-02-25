@@ -2,10 +2,13 @@ const router = require("express").Router();
 const db = require("../db");
 const sql_transactions = require("../db/qry_transaction").sql_transactions;
 const sql_transaction = require("../db/qry_transaction").sql_transaction;
+const sql_transaction_no_broker = require("../db/qry_transaction")
+  .sql_transaction_no_broker;
 const sql_update_transaction = require("../db/qry_transaction")
   .sql_update_transaction;
 const sql_post_transaction = require("../db/qry_transaction")
   .sql_post_transaction;
+
 const sql_holding = require("../db/qry_portfolio").sql_holding;
 
 // loadTransactions API: /api/transactions/1/AAPL
@@ -26,12 +29,28 @@ router.get("/:port_id/:symbol", async (req, res) => {
   }
 });
 
-// loadTransaction API: /api/id/171
-router.get("/id/:id", async (req, res) => {
+// loadTransaction API: /api/171
+router.get("/:id", async (req, res) => {
   const transId = req.params.id;
   console.log("get transaction: ", transId);
+  let broker_id = null;
+  let sqlString = `${sql_transaction}`;
+
   try {
-    const qryResult = await db.query(`${sql_transaction}`, [transId]);
+    const qryResult = await db.query(
+      "select broker_id from transaction_buy where trans_buy_id=$1",
+      [transId]
+    );
+    broker_id = qryResult.rows[0].broker_id;
+    if (broker_id === null) {
+      sqlString = `${sql_transaction_no_broker}`;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+  console.log("get transaction: broker_id: ", broker_id);
+  try {
+    const qryResult = await db.query(`${sqlString}`, [transId]);
 
     res.status(200).json({
       status: "success",
@@ -144,44 +163,26 @@ router.post("/", async (req, res) => {
   }
 });
 
-// deleteTransaction API - delete single or all transactions
+// deleteTransaction API - delete single transaction
 router.delete("/:portId/:symbol/:transId", async (req, res) => {
   console.log("transactions: delete: req.params.id", req.params);
   const trans_id = req.params.transId;
   const symbol = req.params.symbol;
   const port_id = req.params.portId;
 
-  if (trans_id === "undefined") {
-    try {
-      const qryResult = await db.query(
-        "DELETE FROM transaction_buy WHERE symbol=$1 and port_id=$2",
-        [symbol, port_id]
-      );
+  try {
+    const qryResult = await db.query(
+      "DELETE FROM transaction_buy WHERE trans_buy_id=$1",
+      [trans_id]
+    );
+    const updatedHolding = await db.query(`${sql_holding}`, [port_id, symbol]);
 
-      res.status(204).json({
-        status: "success",
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  } else {
-    try {
-      const qryResult = await db.query(
-        "DELETE FROM transaction_buy WHERE trans_buy_id=$1",
-        [trans_id]
-      );
-      const updatedHolding = await db.query(`${sql_holding}`, [
-        port_id,
-        symbol,
-      ]);
-
-      res.status(200).json({
-        status: "success",
-        holding: updatedHolding.rows[0],
-      });
-    } catch (error) {
-      console.log(error);
-    }
+    res.status(200).json({
+      status: "success",
+      holding: updatedHolding.rows[0],
+    });
+  } catch (error) {
+    console.log(error);
   }
 });
 

@@ -1,7 +1,7 @@
 /* eslint-disable react/jsx-key */
 /* eslint-disable react/display-name */
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { useTable, useRowSelect } from "react-table";
+import { useTable, useRowSelect, useFlexLayout } from "react-table";
 import { useDispatch, useSelector } from "react-redux";
 
 import PropTypes from "prop-types";
@@ -11,6 +11,21 @@ import EditPortfolio from "./EditPortfolio";
 import { loadPortfolios } from "../../redux/actions/portfolioActions";
 import { Checkbox } from "../common/Checkbox";
 import CreatePortfolio from "./CreatePortfolio";
+
+const headerProps = (props, { column }) => getStyles(props, column.align);
+
+const cellProps = (props, { cell }) => getStyles(props, cell.column.align);
+
+const getStyles = (props, align = "left") => [
+  props,
+  {
+    style: {
+      justifyContent: align === "right" ? "flex-end" : "flex-start",
+      alignItems: "flex-start",
+      display: "flex",
+    },
+  },
+];
 
 function Table({ columns, data, onSelectedRows }) {
   const {
@@ -26,6 +41,7 @@ function Table({ columns, data, onSelectedRows }) {
       data,
     },
     useRowSelect,
+    useFlexLayout,
     (hooks) => {
       hooks.visibleColumns.push((columns) => {
         return [
@@ -59,34 +75,38 @@ function Table({ columns, data, onSelectedRows }) {
 
   return (
     <>
-      <table {...getTableProps()}>
-        <thead>
+      <div {...getTableProps()} className="table">
+        <div className="thead">
           {headerGroups.map((headerGroup) => (
             // eslint-disable-next-line react/jsx-key
-            <tr {...headerGroup.getHeaderGroupProps()}>
+            <div {...headerGroup.getHeaderGroupProps()} className="tr">
               {headerGroup.headers.map((column) => (
                 // eslint-disable-next-line react/jsx-key
-                <th {...column.getHeaderProps()}>{column.render("Header")}</th>
+                <div {...column.getHeaderProps()} className="th">
+                  {column.render("Header")}
+                </div>
               ))}
-            </tr>
+            </div>
           ))}
-        </thead>
-        <tbody {...getTableBodyProps()}>
+        </div>
+        <div {...getTableBodyProps()} className="tbody">
           {rows.map((row) => {
             prepareRow(row);
             return (
-              <tr {...row.getRowProps()}>
+              <div {...row.getRowProps()} className="tr">
                 {row.cells.map((cell) => {
                   return (
                     // eslint-disable-next-line react/jsx-key
-                    <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
+                    <div {...cell.getCellProps()} className="td">
+                      {cell.render("Cell")}
+                    </div>
                   );
                 })}
-              </tr>
+              </div>
             );
           })}
-        </tbody>
-      </table>
+        </div>
+      </div>
     </>
   );
 }
@@ -153,6 +173,18 @@ function PortfolioTable() {
     if (portfolios.length === 0) dispatch(loadPortfolios());
 
     const onClick = (e) => {
+      console.log(
+        "useEffect e.target: ",
+        e.target,
+        "dropdownRef: ",
+        dropdownRef
+      );
+      console.log(
+        "dropdownRef.current.contains(e.target)",
+        dropdownRef.current.contains(e.target),
+        "isEditPortOpen:",
+        isEditPortOpen
+      );
       if (
         dropdownRef.current !== null &&
         !dropdownRef.current.contains(e.target)

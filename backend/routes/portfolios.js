@@ -44,18 +44,18 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.get("/:id/holdings", async (req, res) => {
-  try {
-    const portfolio = await db.query(`${sql_holdings}`, [req.params.id]);
-    res.status(200).json({
-      status: "success",
-      results: portfolio.rows.length,
-      holdings: portfolio.rows,
-    });
-  } catch (err) {
-    console.log(err);
-  }
-});
+// router.get("/:id/holdings", async (req, res) => {
+//   try {
+//     const portfolio = await db.query(`${sql_holdings}`, [req.params.id]);
+//     res.status(200).json({
+//       status: "success",
+//       results: portfolio.rows.length,
+//       holdings: portfolio.rows,
+//     });
+//   } catch (err) {
+//     console.log(err);
+//   }
+// });
 
 router.post("/", async (req, res) => {
   const port_name = req.body.port_name;

@@ -1,9 +1,9 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable react/display-name */
 /* eslint-disable no-empty */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { withRouter } from "react-router";
-import { useTable, useExpanded } from "react-table";
+import { useTable, useExpanded, useFlexLayout } from "react-table";
 import { useDispatch, useSelector } from "react-redux";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
@@ -19,6 +19,7 @@ import {
   updateTransaction as updateTransactionApi,
   deleteTransaction as deleteTransactionApi,
 } from "../../api/transactionApi";
+import { deletePortfolioHolding as deletePortfolioHoldingApi } from "../../api/holdingApi";
 import {
   getQuotes as getQuotesApi,
   updatePrices as updatePricesApi,
@@ -36,6 +37,7 @@ function Table({
   renderRowSubComponent,
   expandedRows,
   prices,
+  refreshSpinner,
 }) {
   const loading = useSelector((state) => state.apiCallsInProgress);
 
@@ -52,7 +54,8 @@ function Table({
       columns: userColumns,
       data,
     },
-    useExpanded
+    useExpanded,
+    useFlexLayout
   );
 
   return (
@@ -60,47 +63,64 @@ function Table({
       {loading > 0 ? (
         <Spinner />
       ) : (
-        <table {...getTableProps()}>
-          <thead>
+        <div {...getTableProps()} className="table">
+          <div className="thead">
             {headerGroups.map((headerGroup) => (
               // eslint-disable-next-line react/jsx-key
-              <tr {...headerGroup.getHeaderGroupProps()}>
+              <div {...headerGroup.getHeaderGroupProps()} className="tr">
                 {headerGroup.headers.map((column) => (
                   // eslint-disable-next-line react/jsx-key
-                  <th {...column.getHeaderProps()}>
+                  <div {...column.getHeaderProps()} className="th">
                     {column.render("Header")}
-                  </th>
+                  </div>
                 ))}
-              </tr>
+              </div>
             ))}
-          </thead>
-          <tbody {...getTableBodyProps()}>
+          </div>
+          {/* <tbody {...getTableBodyProps()}> */}
+          <div className="tbody">
             {rows.map((row) => {
               prepareRow(row);
               let rowProps = row.getRowProps();
 
               const expandedRow = expandedRows.find((id) => id === row.id);
-              // console.log("Table: expandedRows:", expandedRows);
+
+              // if there is expandedRow id that matches the current row id and
+              // the current row .isExpanded===undefined - happens when all or just one price is updated
+
               if (
                 expandedRow &&
                 expandedRow === row.id &&
                 row.isExpanded === undefined
-              )
+              ) {
+                console.log(
+                  "expandedRows: ",
+                  expandedRows,
+                  "expandedRow:",
+                  expandedRow,
+                  " row.isExpanded: ",
+                  row.isExpanded
+                );
                 row.toggleRowExpanded();
+              }
 
               return (
                 <React.Fragment key={rowProps.key}>
-                  <tr {...rowProps}>
+                  <div {...rowProps} className="tr">
                     {row.cells.map((cell) => {
                       return (
                         // eslint-disable-next-line react/jsx-key
-                        <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
+                        <div {...cell.getCellProps()} className="hold_td">
+                          {cell.render("Cell", { refreshSpinner })}
+                        </div>
                       );
                     })}
-                  </tr>
-                  {row.isExpanded || expandedRow ? (
-                    <tr>
-                      <td colSpan={visibleColumns.length}>
+                  </div>
+                  {/* shows the transactions when row.isExpanded=True OR the expandedRow id matches the current row id*/}
+                  {/* {row.isExpanded || expandedRow ? ( */}
+                  {row.isExpanded ? (
+                    <div className="tr">
+                      <div colSpan={visibleColumns.length} className="td">
                         {renderRowSubComponent({
                           row,
                           rowProps,
@@ -108,14 +128,14 @@ function Table({
                           expanded,
                           prices,
                         })}
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ) : null}
                 </React.Fragment>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+        </div>
       )}
     </>
   );
@@ -125,6 +145,7 @@ Table.propTypes = {
   columns: PropTypes.array.isRequired,
   data: PropTypes.array.isRequired,
   renderRowSubComponent: PropTypes.func.isRequired,
+  refreshSpinner: PropTypes.string,
 };
 // prices are not tracked real time but are refreshed periodically (5-10min lag)
 function HoldingTable(props) {
@@ -138,8 +159,12 @@ function HoldingTable(props) {
   const [isAddSymbolOpen, toggleAddSymbol] = useState(false);
   const [isDeleteTransOpen, toggleDeleteTransaction] = useState(false);
   const [deletedHolding, setDeletedHolding] = useState({});
-  // console.log("marketPriceHoldings: ", marketPriceHoldings);
+  const [refreshSpinner, setRefreshSpinner] = useState(null);
 
+  console.log("expandedRows: ", expandedRows);
+
+  // click to expand/collapse holding will put/remove the row into/from 'expandedRows' state
+  // expandedRows is passed to the Holding Table
   const trackExpandedRows = (row) => {
     const rowId = row.id;
     if (!row.isExpanded) {
@@ -155,12 +180,20 @@ function HoldingTable(props) {
         id: "expander",
         Header: ({ getToggleAllRowsExpandedProps, isAllRowsExpanded }) => (
           <span {...getToggleAllRowsExpandedProps()}>
-            {isAllRowsExpanded ? "-" : "+"}
+            {isAllRowsExpanded ? (
+              <FontAwesomeIcon icon={faAngleDown} />
+            ) : (
+              <FontAwesomeIcon icon={faAngleRight} />
+            )}
           </span>
         ),
 
         // eslint-disable-next-line react/display-name
-        Cell: ({ row }) => {
+        Cell: (props) => {
+          // console.log("refreshSpinner: ", refreshSpinner);
+          const row = props.row;
+          const updatingPrice = props.refreshSpinner === props.row.id;
+
           return (
             <>
               <span onClick={() => trackExpandedRows(row)}>
@@ -172,8 +205,17 @@ function HoldingTable(props) {
                   )}
                 </span>
               </span>{" "}
-              <span className="dropdown" onClick={() => refreshPrice(row)}>
-                <FontAwesomeIcon icon={faSync} size="xs" />
+              <span
+                className="dropdown"
+                onClick={() => {
+                  refreshPrice(row);
+                }}
+              >
+                <FontAwesomeIcon
+                  className={updatingPrice ? "refresh-start" : ""}
+                  icon={faSync}
+                  size="xs"
+                />
               </span>
             </>
           );
@@ -259,6 +301,7 @@ function HoldingTable(props) {
 
   useEffect(() => {
     // console.log("2nd useEffect: portfolioHoldings: ", portfolioHoldings);
+
     let priceRefresh = null;
     if (portfolioHoldings.length > 0 && marketPriceHoldings.length === 0) {
       // priceRefresh = setInterval(() => getQuotes(), 15 * 60 * 1000);
@@ -267,6 +310,39 @@ function HoldingTable(props) {
 
     return () => clearInterval(priceRefresh);
   }, [portfolioHoldings]);
+
+  // const usePrevious = (value) => {
+  //   const ref = useRef();
+  //   useEffect(() => {
+  //     ref.current = value;
+  //   });
+
+  //   return ref.current;
+  // };
+  // const prevHoldings = usePrevious(marketPriceHoldings);
+
+  // useEffect(() => {
+  //   if (prevHoldings && prevHoldings.length < marketPriceHoldings.length) {
+  //     console.log("<:", marketPriceHoldings);
+  //     setExpandedRows((prev) => prev.map((id) => (++id).toString()));
+  //   }
+
+  //   if (prevHoldings && prevHoldings.length > marketPriceHoldings.length) {
+  //     console.log(">:", marketPriceHoldings);
+  //     setExpandedRows((prev) => prev.map((id) => (--id).toString()));
+  //   }
+
+  //   //   console.log(
+  //   //     "3rd useEffect: marketPriceHoldings: ",
+  //   //     marketPriceHoldings,
+  //   //     "expandedRows: ",
+  //   //     expandedRows,
+  //   //     "currentRowIds: ",
+  //   //     currentRowIds,
+  //   //     "idRowToRemove:",
+  //   //     idRowToRemove
+  //   //   );
+  // }, [marketPriceHoldings]);
 
   const renderRowSubComponent = (props) => {
     return (
@@ -306,7 +382,7 @@ function HoldingTable(props) {
     };
 
     try {
-      const response = await deleteTransactionApi(deletedObject);
+      const response = await deletePortfolioHoldingApi(deletedObject);
 
       console.log(
         "delete portfolioHoldings:",
@@ -325,9 +401,11 @@ function HoldingTable(props) {
 
   // single symbol market price refresh
   const refreshPrice = async (row) => {
+    setRefreshSpinner(row.id);
     const symbol = [row.original.symbol];
     // get the price from py yahoo
     const addSymbolGetPrice = await getQuotesApi(symbol);
+    setRefreshSpinner(null);
     const quote = addSymbolGetPrice.quotes;
     const splitData = quote.split(":");
     const priceData = splitData[1].trim();
@@ -344,7 +422,11 @@ function HoldingTable(props) {
     setMarketPriceHoldings((prev) =>
       prev.map((holding) => {
         if (holding.symbol === symbol[0]) {
-          return { ...holding, current_price: updatedPrice };
+          return {
+            ...holding,
+            current_price: updatedPrice,
+            market_value: updatedPrice * holding.shares,
+          };
         }
         return holding;
       })
@@ -363,6 +445,7 @@ function HoldingTable(props) {
     console.log("getQuotes symbols: ", symbols);
     // get the prices for all holdings from py yahoo
     try {
+      setRefreshSpinner("all");
       const data = await getQuotesApi(symbols);
       const quotesString = data.quotes.slice(1, data.quotes.length - 2);
       const quotesArray = quotesString.split(",");
@@ -389,6 +472,7 @@ function HoldingTable(props) {
             current_price: quotes[hold.symbol],
             market_value: quotes[hold.symbol] * hold.shares,
           };
+          setRefreshSpinner(null);
           return updatedHolding;
         })
       );
@@ -421,7 +505,14 @@ function HoldingTable(props) {
       </span>
       {" | "}
       <span className="dropdown" onClick={() => getQuotes()}>
-        Refresh All
+        Refresh All{" "}
+        {refreshSpinner === "all" ? (
+          <FontAwesomeIcon
+            className={"refresh-start"}
+            icon={faSync}
+            size="xs"
+          />
+        ) : null}
       </span>
       &nbsp;
       <Table
@@ -434,6 +525,7 @@ function HoldingTable(props) {
         renderRowSubComponent={renderRowSubComponent}
         expandedRows={expandedRows}
         prices={prices}
+        refreshSpinner={refreshSpinner}
       />
       <Modal
         show={isAddSymbolOpen}
@@ -442,7 +534,9 @@ function HoldingTable(props) {
         <AddSymbol
           port_id={portfolio_id}
           handleClose={() => toggleAddSymbol(!isAddSymbolOpen)}
+          marketPriceHoldings={marketPriceHoldings}
           setMarketPriceHoldings={setMarketPriceHoldings}
+          setExpandedRows={setExpandedRows}
         />
       </Modal>
       <Modal

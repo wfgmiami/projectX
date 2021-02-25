@@ -7,8 +7,8 @@ import {
   useGroupBy,
   useExpanded,
   useSortBy,
-  useBlockLayout,
   useResizeColumns,
+  useFlexLayout,
 } from "react-table";
 import { withRouter } from "react-router";
 import PropTypes from "prop-types";
@@ -35,7 +35,6 @@ import { loadPortfolioHoldings } from "../../redux/actions/holdingAction";
 import DeleteForm from "./DeleteForm";
 import Modal from "../common/Modal";
 import { transactionIsValid } from "../common/FormIsValid";
-// import { updateTransaction } from "../../redux/actions/transactionActions";
 
 const EditableCell = ({
   value: initialValue,
@@ -112,17 +111,18 @@ function Table({ columns, data, updateMyData, errors, addTransaction }) {
     },
     useGroupBy,
     useSortBy,
-    useExpanded
+    useExpanded,
+    useFlexLayout
     // useBlockLayout
     // useResizeColumns
   );
 
   return (
     <>
-      <table {...getTableProps()} className="transactions">
-        <thead className="header">
+      <div {...getTableProps()} className="table">
+        <div className="thead">
           {headerGroups.map((headerGroup) => (
-            <tr {...headerGroup.getHeaderGroupProps()} className="tr">
+            <div {...headerGroup.getHeaderGroupProps()} className="tr">
               {headerGroup.headers.map((column) => {
                 column.id === "edit" ? (column.canSort = false) : column;
                 // console.log(
@@ -132,7 +132,7 @@ function Table({ columns, data, updateMyData, errors, addTransaction }) {
                 //   column.getSortByToggleProps()
                 // );
                 return (
-                  <th
+                  <div
                     {...column.getHeaderProps(column.getSortByToggleProps())}
                     className="th"
                   >
@@ -165,20 +165,20 @@ function Table({ columns, data, updateMyData, errors, addTransaction }) {
                         )
                       ) : null}
                     </span>
-                  </th>
+                  </div>
                 );
               })}
-            </tr>
+            </div>
           ))}
-        </thead>
-        <tbody {...getTableBodyProps()} className="tb">
+        </div>
+        <div {...getTableBodyProps()} className="trans_tbody">
           {rows.map((row) => {
             prepareRow(row);
             return (
-              <tr {...row.getRowProps()} className="tr">
+              <div {...row.getRowProps()} className="tr">
                 {row.cells.map((cell) => {
                   return (
-                    <td {...cell.getCellProps()} className="td">
+                    <div {...cell.getCellProps()} className="td">
                       {cell.render("Cell")}
 
                       {/* {cell.isGrouped ? (
@@ -197,14 +197,14 @@ function Table({ columns, data, updateMyData, errors, addTransaction }) {
                       ) : cell.isPlaceholder ? null : (
                         cell.render("Cell")
                       )} */}
-                    </td>
+                    </div>
                   );
                 })}
-              </tr>
+              </div>
             );
           })}
-        </tbody>
-      </table>
+        </div>
+      </div>
     </>
   );
 }
@@ -249,7 +249,9 @@ function TransactionTable(props) {
   const newTransactionModel = {
     row_id: null,
     symbol,
-    trade_date: new Date(),
+    trade_date: new Date().toLocaleString("en-US", {
+      timeZone: "America/New_York",
+    }),
     shares: null,
     purchase_price: null,
     book_value: null,
@@ -284,15 +286,38 @@ function TransactionTable(props) {
     setTransactionsData((prev) => [...prev, newTransaction]);
   };
 
-  const setTradeDate = (date, cellObj) => {
+  const setTradeDate = (trDate, cellObj) => {
     const trans_id = cellObj.row.original.trans_buy_id;
-    setTransactionsData((prev) =>
-      prev.map((rowData) => {
-        if (rowData.trans_buy_id === trans_id) {
-          rowData.trade_date = date;
-        }
-        return rowData;
-      })
+    const row_id = cellObj.row.original.row_id;
+    console.log(
+      "setTradeDate, trDate: ",
+      trDate,
+      "transData: ",
+      transactionsData
+    );
+    setTransactionsData(
+      (prev) =>
+        prev.map((rowData) => {
+          if (trans_id) {
+            if (rowData.trans_buy_id === trans_id) {
+              rowData.trade_date = trDate;
+              return rowData;
+            }
+          } else if (row_id) {
+            if (rowData.row_id === row_id) {
+              rowData.trade_date = trDate;
+              return rowData;
+            }
+          }
+          return rowData;
+        })
+
+      // prev.map((rowData) => {
+      //   if (rowData.trans_buy_id === trans_id) {
+      //     rowData.trade_date = date;
+      //   }
+      //   return rowData;
+      // })
     );
   };
   const isCalendarDisabled = (cellObj) => {
@@ -300,9 +325,10 @@ function TransactionTable(props) {
     return !isEditing;
   };
 
+  // --- SAVE UPDATED NEW OR EXISTING TRANSACTION FUNCTIONS ---
   const updateTransaction = async (updatedTransaction) => {
     console.log(
-      "updatedTransaction:",
+      "updateTransaction: updatedTransaction:",
       updatedTransaction,
       "port id ",
       portfolioId
@@ -311,26 +337,58 @@ function TransactionTable(props) {
     try {
       const response = await updateTransactionApi(updatedTransaction);
       const updatedHolding = response.holding;
-      console.log("update response: ", response);
+      console.log("updateTransaction: response: ", response);
 
+      // setMarketPriceHoldings((prev) =>
+      //   prev.map((holding) =>
+      //     holding.symbol === updatedHolding.symbol
+      //       ? { rowId: holding.rowId, ...updatedHolding }
+      //       : holding
+      //   )
+      // );
       setMarketPriceHoldings((prev) =>
         prev.map((holding) =>
           holding.symbol === updatedHolding.symbol ? updatedHolding : holding
         )
       );
-      expandRow();
+      const symbol = updatedTransaction.symbol;
+      const trans = { portfolioId, symbol };
+      const responseTrans = await loadTransactionsApi(trans);
+      console.log("updateTransaction: responseTrans", responseTrans);
+      const transactions = responseTrans.transactions;
+      const withIsEditableTrans = transactions.map((trans) => ({
+        ...trans,
+        isEditing: false,
+      }));
+
+      setTransactionsData(withIsEditableTrans);
+      // const withIsEditableTrans = { ...updatedTransaction, isEditing: false };
+      // setTransactionsData((prev) =>
+      //   prev.map((trans) =>
+      //     trans.trans_buy_id
+      //       ? trans.trans_buy_id === updatedTransaction.trans_buy_id
+      //         ? withIsEditableTrans
+      //         : trans
+      //       : trans.row_id === updatedTransaction.row_id
+      //       ? withIsEditableTrans
+      //       : trans
+      //   )
+      // );
+
+      // expandRow();
     } catch (error) {
       console.log(error);
     }
   };
 
-  const handleClickEditRow = (cellObj) => {
+  const handleClickEditSaveRow = (cellObj) => {
     const rowIndex = cellObj.row.index;
     const trans_id = cellObj.row.original.trans_buy_id;
-    console.log("handleClickEditRow: cellObj: ", cellObj);
     const isEditing = cellObj.row.original.isEditing;
 
+    // triggers when Save icon is click for a transaction (new or existing)
     if (isEditing) {
+      console.log("handleClickEditSaveRow: idEditing=True: cellObj: ", cellObj);
       if (trans_id) {
         const updatedTransaction = transactionsData.find(
           (trans) => trans.trans_buy_id === trans_id
@@ -349,7 +407,11 @@ function TransactionTable(props) {
       } else {
         const newTransaction = cellObj.row.original;
         const isValid = transactionIsValid(newTransaction, setErrors, rowIndex);
-        console.log("newTransaction", newTransaction, isValid);
+        console.log(
+          "handleClickEditSaveRow: newTransaction",
+          newTransaction,
+          isValid
+        );
         if (isValid) {
           updateTransaction(newTransaction);
           setTransactionsData((prev) =>
@@ -363,6 +425,10 @@ function TransactionTable(props) {
         }
       }
     } else {
+      console.log(
+        "handleClickEditSaveRow: idEditing=False: cellObj: ",
+        cellObj
+      );
       setTransactionsData((prev) =>
         prev.map((rowData, index) => {
           if (rowIndex === index) {
@@ -374,93 +440,7 @@ function TransactionTable(props) {
     }
   };
 
-  const deleteTransaction = async (deletedTransId) => {
-    const deletedTransaction = transactionsData.filter(
-      (trans) => trans.trans_buy_id === deletedTransId
-    )[0];
-    console.log("trans data ", transactionsData);
-    const deletedTransSymbol = deletedTransaction.symbol;
-    const deletedTransPortId = deletedTransaction.port_id;
-
-    const deletedObject = {
-      deletedTransId,
-      deletedTransSymbol,
-      deletedTransPortId,
-    };
-
-    console.log(
-      "deletedObject: ",
-      deletedObject,
-      "deletedTransaction",
-      deletedTransaction
-    );
-
-    try {
-      const response = await deleteTransactionApi(deletedObject);
-
-      console.log("delete response:", response);
-
-      setTransactionsData((prev) =>
-        prev.filter((trans) => trans.trans_buy_id !== deletedTransId)
-      );
-      const updatedHolding = response.holding;
-
-      // when the only one or the last transaction is deleted - remove symbol
-      if (!updatedHolding) {
-        setMarketPriceHoldings((prev) =>
-          prev.filter((holding) => holding.symbol !== deletedTransSymbol)
-        );
-      } else {
-        setMarketPriceHoldings((prev) =>
-          prev.map((holding) =>
-            holding.symbol === updatedHolding.symbol ? updatedHolding : holding
-          )
-        );
-        expandRow();
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const handleClickDeleteRow = (cellObj) => {
-    const deleteTransactionId = cellObj.row.original.trans_buy_id;
-    const deleteRowId = cellObj.row.original.row_id;
-
-    if (deleteTransactionId === undefined) {
-      setDeleteRowId(deleteRowId);
-    } else {
-      setDeleteTransactionId(deleteTransactionId);
-    }
-
-    toggleDeleteTransaction(!isDeleteTransOpen);
-
-    console.log(
-      "handleClickDeleteRow: deleteTransactionId: ",
-      deleteTransactionId,
-      "deleteRowId",
-      deleteRowId,
-      "cellObj:",
-      cellObj
-    );
-  };
-
-  function onDelete(e) {
-    e.preventDefault();
-
-    if (deleteTransactionId === undefined) {
-      setTransactionsData((prev) =>
-        prev.filter((trans) => trans.row_id !== deleteRowId)
-      );
-    } else {
-      deleteTransaction(deleteTransactionId);
-    }
-
-    toggleDeleteTransaction(!isDeleteTransOpen);
-    setErrors({});
-    console.log("onDelete: deleteTransactionId: ", deleteTransactionId);
-  }
-
+  // --- CANCEL EDIT FUNCTIONS ---
   const loadTransaction = async (transId) => {
     try {
       const { transaction } = await loadTransactionApi(transId);
@@ -523,6 +503,97 @@ function TransactionTable(props) {
     );
   };
 
+  // --- DELETE FUNCTIONS ---
+  // API call to delete transaction
+  const deleteTransaction = async (deletedTransId) => {
+    const deletedTransaction = transactionsData.filter(
+      (trans) => trans.trans_buy_id === deletedTransId
+    )[0];
+
+    const deletedTransSymbol = deletedTransaction.symbol;
+    const deletedTransPortId = deletedTransaction.port_id;
+
+    const deletedObject = {
+      deletedTransId,
+      deletedTransSymbol,
+      deletedTransPortId,
+    };
+
+    console.log("deletedTransaction", deletedTransaction);
+
+    try {
+      const response = await deleteTransactionApi(deletedObject);
+
+      console.log("delete response:", response);
+
+      setTransactionsData((prev) =>
+        prev.filter((trans) => trans.trans_buy_id !== deletedTransId)
+      );
+      const updatedHolding = response.holding;
+
+      // when the only one or the last transaction is deleted - remove symbol
+      if (!updatedHolding) {
+        setMarketPriceHoldings((prev) =>
+          prev.filter((holding) => holding.symbol !== deletedTransSymbol)
+        );
+      } else {
+        setMarketPriceHoldings((prev) =>
+          prev.map((holding) =>
+            holding.symbol === updatedHolding.symbol ? updatedHolding : holding
+          )
+        );
+        // expandRow();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  // when trash bin icon is click for a transaction
+  const handleClickDeleteRow = (cellObj) => {
+    const deleteTransactionId = cellObj.row.original.trans_buy_id;
+    const deleteRowId = cellObj.row.original.row_id;
+
+    if (deleteTransactionId === undefined) {
+      // set the rowId to local state of newly added transaction that has not been saved to db
+      setDeleteRowId(deleteRowId);
+      setDeleteTransactionId(undefined);
+    } else {
+      // set the transId to local state of existingn or newly added transaction was saved to db
+      setDeleteTransactionId(deleteTransactionId);
+    }
+
+    toggleDeleteTransaction(!isDeleteTransOpen);
+
+    console.log(
+      "handleClickDeleteRow: deleteTransactionId: ",
+      deleteTransactionId,
+      "deleteRowId",
+      deleteRowId,
+      "cellObj:",
+      cellObj
+    );
+  };
+
+  // after the user confirms the delete on the modal prompt
+  function onDelete(e) {
+    e.preventDefault();
+
+    console.log("onDelete: deleteTransactionId: ", deleteTransactionId);
+    // removing from the state newly added transaction that was not saved to db
+    if (deleteTransactionId === undefined) {
+      setTransactionsData((prev) =>
+        prev.filter((trans) => trans.row_id !== deleteRowId)
+      );
+      // deleting existing or newly added transaction that was saved to db
+    } else {
+      deleteTransaction(deleteTransactionId);
+    }
+
+    toggleDeleteTransaction(!isDeleteTransOpen);
+    setErrors({});
+  }
+
   const columns = useMemo(() => [
     {
       id: "edit",
@@ -531,7 +602,7 @@ function TransactionTable(props) {
         <>
           <span
             className="dropdown"
-            onClick={() => handleClickEditRow(cellObj)}
+            onClick={() => handleClickEditSaveRow(cellObj)}
           >
             {cellObj.row.original.isEditing ? (
               <>
@@ -547,15 +618,21 @@ function TransactionTable(props) {
               <FontAwesomeIcon icon={faPencilAlt} />
             )}
           </span>
-
-          <span
-            className="dropdown"
-            onClick={() => handleClickDeleteRow(cellObj)}
-          >
-            <FontAwesomeIcon icon={faTrashAlt} />
-          </span>
+          {!cellObj.row.original.isEditing ? (
+            <span
+              className="dropdown"
+              onClick={() => handleClickDeleteRow(cellObj)}
+            >
+              <FontAwesomeIcon icon={faTrashAlt} />
+            </span>
+          ) : null}
         </>
       ),
+    },
+    {
+      id: "symbol",
+      Header: "Symbol",
+      accessor: "symbol",
     },
     {
       id: "trade_date",
@@ -567,7 +644,9 @@ function TransactionTable(props) {
       // },
 
       Cell: (cellObj) => {
-        let tradeDate = new Date();
+        let tradeDate = new Date().toLocaleString("en-US", {
+          timeZone: "America/New_York",
+        });
 
         if (cellObj.row.original.trade_date) {
           tradeDate = new Date(Date.parse(cellObj.row.original.trade_date));
@@ -581,7 +660,7 @@ function TransactionTable(props) {
         const CustomCalendarInput = ({ value, onClick }) => (
           <button
             style={btnStyle}
-            className="example-custom-input"
+            // className="example-custom-input"
             onClick={onClick}
           >
             {value}
@@ -594,6 +673,7 @@ function TransactionTable(props) {
           <DatePicker
             selected={objectTradeDate}
             onChange={(date) => setTradeDate(date, cellObj)}
+            // popperClassName="calendarPopperStyle"
             customInput={<CalendarInput />}
             disabled={isCalendarDisabled(cellObj)}
             showMonthDropdown
@@ -648,7 +728,18 @@ function TransactionTable(props) {
     },
   ]);
 
+  // triggers on expanding holding click - loads the transactions for the holding
   useEffect(() => {
+    console.log("useEffect: ", props);
+    // const rowId = props.row.id;
+    // const symbol = props.row.original.symbol;
+
+    // setMarketPriceHoldings((prev) =>
+    //   prev.map((holding) =>
+    //     holding.symbol === symbol ? { ...holding, rowId } : holding
+    //   )
+    // );
+
     const fetchData = async () => {
       try {
         const symbol = props.row.original.symbol;
@@ -668,8 +759,9 @@ function TransactionTable(props) {
     fetchData();
   }, []);
 
+  // triggers when prices are refreshed - to update holdings
   useEffect(() => {
-    console.log("UseEffect prices: ", prices);
+    console.log("useEffect: prices: ", prices);
     if (Object.keys(prices).length > 0) {
       const symbols = Object.keys(prices);
 
@@ -691,6 +783,7 @@ function TransactionTable(props) {
     }
   }, [prices]);
 
+  // function used when editing row
   const updateMyData = (rowIndex, columnId, value, e) => {
     // console.log("columnId: ", columnId, " value: ", value);
     setTransactionsData((old) =>
@@ -710,7 +803,7 @@ function TransactionTable(props) {
             new_shares = value;
           }
 
-          console.log("old[rowIndex]: ", old[rowIndex]);
+          console.log("updateMyData: old[rowIndex]: ", old[rowIndex]);
 
           if (old[rowIndex].trans_buy_id) {
             if (columnId === "shares") {
@@ -780,7 +873,5 @@ function TransactionTable(props) {
 TransactionTable.propTypes = {
   row: PropTypes.object,
 };
-
-// export default TransactionTable;
 
 export default withRouter(TransactionTable);

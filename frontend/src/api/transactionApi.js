@@ -10,12 +10,17 @@ export function loadTransactions(trans) {
 }
 
 export function loadTransaction(transId) {
-  const baseUrl = process.env.API_URL + `/api/transactions/id/${transId}`;
+  const baseUrl = process.env.API_URL + `/api/transactions/${transId}`;
   return fetch(baseUrl).then(handleResponse).catch(handleError);
 }
 
 export function updateTransaction(updatedTransaction) {
-  console.log("API: updatedTransaction", updatedTransaction);
+  console.log(
+    "API: updatedTransaction",
+    updatedTransaction,
+    "JSON.stringify(updatedTransaction)",
+    JSON.stringify(updatedTransaction)
+  );
   const transId = updatedTransaction.trans_buy_id;
   let baseUrl = process.env.API_URL + `/api/transactions/`;
   if (transId) {
